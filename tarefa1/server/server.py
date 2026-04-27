@@ -57,22 +57,52 @@ def main():
 
 
 def handle_client(client_ip: str, client_port: int, filename: str):
+    """
+    Thread responsável por gerenciar a transferência de um arquivo específico.
+    """
+
+    TAMANHO_CABECALHO = 21
+    TAMANHO_PACOTE = 1024
+
+    # AF_INET = IPv4 | SOCK_DGRAM = UDP
     thread_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    seq_num = 0
+    try:
+        thread_socket.bind(('', 0))
+        porta_escolhida = thread_socket.getsockname()
+        print(f"[Thread] Atendimento iniciado para {client_ip} na porta {porta_escolhida}")
 
-    thread_socket.bind(('', 0))  # Bind a uma porta aleatória disponível
-    meu_ip, minha_porta = thread_socket.getsockname()
-    print(f"[Thread] Iniciada para {client_ip}:{client_port} usando porta {minha_porta}")
+        # Configura um timeout para o handshake não travar a thread se o cliente sumir
+        thread_socket.settimeout(5.0)
 
-    thread_socket.sendto(gerar_mensagem_comeco_transmissao(seq_num), (client_ip, client_port))
-    seq_num += 1
+        msg_confirmacao = b"200_OK"
+        thread_socket.sendto(msg_confirmacao, (client_ip, client_port))
+
+        try:
+            data, addr = thread_socket.recvfrom(1024)
+            
+            if addr == (client_ip, client_port) and data == b"ACK_START":
+                print(f"[Thread] Handshake concluído com {client_ip}:{client_port}. Iniciando fatiamento.")
+                
+                # CHAMA A FUNÇÃO DE TRANSFERÊNCIA REAL AQUI
+                # transferir_arquivo(thread_socket, (client_ip, client_port), filename)
+                
+            else:
+                print(f"[Thread] Erro no handshake: Mensagem inválida de {addr}")
+
+        except socket.timeout:
+            print(f"[Thread] Timeout: O cliente {client_ip}:{client_port} não confirmou o início.")
+
+    except Exception as e:
+        print(f"[Thread] Erro crítico na thread: {e}")
     
-    transfering = True
-    while transfering:
-        # Lógica de transferência de arquivos usando mensagens estruturadas
-        pass
+    finally:
+        # 5. Encerramento (Passo 9)
+        thread_socket.close()
+        print(f"[Thread] Socket na porta {porta_escolhida} encerrado.")
 
+        # Tamanho fixo do cabeçalho baseado na sua estrutura
+    
 
 # Tipos de mensagem:
 # 0 - Começando transmissão : 'B'

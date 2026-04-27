@@ -24,6 +24,4 @@ O protocolo o qual desenvolverei será simples, consistindo em um pequeno handsh
     8.1. Tipo de mensagem: Identificador da função do pacote (Início da transmissão, Dados, ACK, EOF)
     8.2. Número de sequência: Identificador numérico crescente para garantir a ordenação do cliente e detecção de perdas
     8.3. Hash MD5
-9. 
-
-
+9. Ao finalizar o envio do arquivo, a thread será desinstanciada pelo servidor, encerrando a conexão.
