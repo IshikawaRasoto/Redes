@@ -6,19 +6,26 @@ import hashlib
 
 
 def main():
-    # 1. Configurar o analisador de argumentos
+
     parser = argparse.ArgumentParser(description="Client para transferência de arquivos usando UDP")
     
-    # 2. Adicionar o parâmetro/flag --params
     parser.add_argument('--serverip', type=str, help='IP do servidor')
-
-    # 3. Adicionar o parâmetro/flag --serverport
     parser.add_argument('--serverport', type=int, help='Porta do servidor')
-
     parser.add_argument('--filename', type=str, help='Nome do arquivo para baixar')
+    parser.add_argument('--simulate_loss', action='store_true', help='Simular perda de pacotes (opcional)')
 
-    # 3. Analisar os argumentos da linha de comando
     args = parser.parse_args()
+
+    if args.simulate_loss:
+        print("Simulação de perda de pacotes ativada. Alguns pacotes serão ignorados segundo arquivo de config.")
+        arquivo_perda = "sim.txt"
+        if not os.path.isfile(arquivo_perda):
+            print(f"Arquivo de configuração para simulação de perda '{arquivo_perda}' não encontrado. Encerrando.")
+            return
+        simular_perda = True
+    else:
+        simular_perda = False
+
     
     # AF_INET = IPv4 | SOCK_DGRAM = Protocolo UDP 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -37,16 +44,17 @@ def main():
 
     client_socket.sendto(mensagem.encode('utf-8'), (endereco_servidor[0], endereco_servidor[1]))
 
-    receber_arquivo(client_socket, endereco_servidor, args.filename)
+    receber_arquivo(client_socket, endereco_servidor, args.filename, simular_perda, arquivo_perda if simular_perda else None)
 
     # Fecha o socket no cliente
     client_socket.close()
 
 
-def receber_arquivo(client_socket: socket.socket, endereco_servidor: tuple, filename: str):
+def receber_arquivo(client_socket: socket.socket, endereco_servidor: tuple, filename: str, simular_perda: bool = False, arquivo_perda: str = "sim.txt"):
     # Implementar a lógica para receber o arquivo em blocos e salvar localmente
 
     fatias_recebidas = {}
+    contagem_pacotes_ignorados = 0
     
     try:
         while True:
@@ -59,14 +67,22 @@ def receber_arquivo(client_socket: socket.socket, endereco_servidor: tuple, file
             # Verifica o tipo da mensagem (D para dados, E para EOF)
             if mensagem_decodificada['tipo'] == b'D':
                 # Se for uma mensagem de dados, armazena a fatia recebida
-                print(f"Recebido pacote de dados: Seq={mensagem_decodificada['sequencia']} Integro={mensagem_decodificada['integro']}")
+                #print(f"Recebido pacote de dados: Seq={mensagem_decodificada['sequencia']} Integro={mensagem_decodificada['integro']}")
                 if mensagem_decodificada['integro']:
-                    print(f"Pacote com sequência {mensagem_decodificada['sequencia']} recebido com integridade. Armazenando e enviando ACK.")
+                    #print(f"Pacote com sequência {mensagem_decodificada['sequencia']} recebido com integridade. Armazenando e enviando ACK.")
                     if mensagem_decodificada['sequencia'] not in fatias_recebidas:
-                        print(f"Armazenando pacote de sequência {mensagem_decodificada['sequencia']}...")
+                        if simular_perda:
+                            with open(arquivo_perda, 'r') as f:
+                                linhas = f.readlines()
+                                if contagem_pacotes_ignorados < 3 and str(mensagem_decodificada['sequencia']) + '\n' in linhas:
+                                    print(f"Simulando perda do pacote de sequência {mensagem_decodificada['sequencia']}. Ignorando.")
+                                    contagem_pacotes_ignorados += 1
+                                    continue
+                        #print(f"Armazenando pacote de sequência {mensagem_decodificada['sequencia']}...")
                         fatias_recebidas[mensagem_decodificada['sequencia']] = mensagem_decodificada['dados']
                         client_socket.sendto(gerar_mensagem_ack(mensagem_decodificada['sequencia']), endereco)
                         ultimo_pacote_recebido = mensagem_decodificada['sequencia']
+                        contagem_pacotes_ignorados = 0  # Reseta a contagem de pacotes ignorados após receber um pacote válido
                     else:
                         client_socket.sendto(gerar_mensagem_ack(ultimo_pacote_recebido), endereco)
                         print(f"Pacote com sequência {mensagem_decodificada['sequencia']} já recebido. Ignorando.")

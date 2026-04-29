@@ -203,7 +203,7 @@ def transferir_arquivo(thread_socket: socket.socket, endereco_cliente: tuple, ca
 
                     if resposta['tipo'] == 'A' and resposta['numero'] == seq_num:
                         # Pacote chegou e foi confirmado!
-                        print(f"[Thread] ACK recebido para seq_num {seq_num}")
+                        #print(f"[Thread] ACK recebido para seq_num {seq_num}")
                         ack_confirmado = True
                         seq_num += 1
                     else:
