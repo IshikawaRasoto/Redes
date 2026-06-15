@@ -1,33 +1,20 @@
-# Aluno: Rafael Eijy Ishikawa Rasoto
-# Trabalho 2 - Redes de Computadores UTFPR
-
 import struct
 import socket
 
-# Formato do cabeçalho TCP: !cI
-# ! - Network byte order
-# c - 1 byte char (Tipo de mensagem)
-# I - 4 bytes unsigned int (Tamanho do payload)
 FORMATO_CABECALHO = '!cI'
 TAMANHO_CABECALHO = struct.calcsize(FORMATO_CABECALHO)
 
-# Tipos de mensagens do protocolo
 TIPOS_MENSAGEM = {
-    b'C': 'CHAT',       # Mensagem de chat
-    b'G': 'GET',        # Requisição de arquivo
-    b'S': 'FILE_START', # Início de envio de arquivo (tamanho|sha256)
-    b'D': 'FILE_DATA',  # Bloco de dados do arquivo
-    b'F': 'FILE_EOF',   # Fim da transmissão do arquivo
-    b'X': 'ERROR',      # Mensagem de erro
-    b'E': 'EXIT'        # Solicitação de saída
+    b'C': 'CHAT',
+    b'G': 'GET',
+    b'S': 'FILE_START',
+    b'D': 'FILE_DATA',
+    b'F': 'FILE_EOF',
+    b'X': 'ERROR',
+    b'E': 'EXIT'
 }
 
 def ler_exato(sock: socket.socket, n: int) -> bytes:
-    """
-    Lê exatamente n bytes do socket TCP. Lida com fragmentação e garante
-    que o buffer retornado tenha o tamanho solicitado, a menos que a conexão
-    seja encerrada prematuramente.
-    """
     dados = b''
     while len(dados) < n:
         pacote = sock.recv(n - len(dados))
@@ -37,10 +24,6 @@ def ler_exato(sock: socket.socket, n: int) -> bytes:
     return dados
 
 def receber_mensagem(sock: socket.socket) -> tuple[bytes, bytes]:
-    """
-    Recebe uma mensagem TCP completa, lendo primeiro o cabeçalho de 5 bytes
-    e depois o payload correspondente de tamanho dinâmico.
-    """
     cabecalho = ler_exato(sock, TAMANHO_CABECALHO)
     tipo_msg, tamanho_payload = struct.unpack(FORMATO_CABECALHO, cabecalho)
     
@@ -51,10 +34,6 @@ def receber_mensagem(sock: socket.socket) -> tuple[bytes, bytes]:
     return tipo_msg, payload
 
 def enviar_mensagem(sock: socket.socket, tipo: bytes, payload: bytes = b''):
-    """
-    Envia uma mensagem TCP completa contendo cabeçalho de 5 bytes e payload.
-    Utiliza sendall para garantir que todo o bloco seja enviado.
-    """
     if tipo not in TIPOS_MENSAGEM:
         raise ValueError(f"Tipo de mensagem inválido: {tipo}")
         

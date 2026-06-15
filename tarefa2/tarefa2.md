@@ -21,7 +21,8 @@ Desenvolver uma aplicação cliente-servidor utilizando o protocolo TCP e progra
 ## Requisitos de Manipulação de Arquivos
 
 Ao implementar a funcionalidade de transferência de arquivos, o aluno deve se atentar obrigatoriamente a:
-* **Verificação de Existência:** O servidor deve validar se o arquivo solicitado existe antes de iniciar a transferência, enviando um erro padronizado caso contrário.
+* **Verificação de Existência:** O servidor deve validar se 
+o arquivo solicitado existe antes de iniciar a transferência, enviando um erro padronizado caso contrário.
 * **Diretório Padrão:** O servidor deve apenas servir arquivos localizados em um diretório específico (ex: pasta `/arquivos`).
 
 > **ALERTA DE SEGURANÇA (Path Injection / Traversal):**
